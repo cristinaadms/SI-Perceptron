@@ -3,7 +3,6 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
-from sklearn.metrics import confusion_matrix, f1_score
 from numpy.typing import NDArray
 
 class Perceptron:
@@ -13,8 +12,7 @@ class Perceptron:
         self.random_state = random_state
         self.weights: NDArray[np.float64] | None = None
         self.bias: float = 0.0
-        self.errors_per_epoch: list[int] = []
-        self.converged_epoch: int | None = None
+        self.errors_history: list[int] = []
         
     def _activation(self, x):
         return np.where(x >= 0, 1, 0)
@@ -36,16 +34,17 @@ class Perceptron:
                 linear_output = np.dot(x_i, self.weights) + self.bias
                 y_predicted = self._activation(linear_output)
                 
+                # Atualiza pesos se houver erro
                 update = self.learning_rate * (y[idx] - y_predicted)
                 self.weights += update * x_i
                 self.bias += update
                 
                 errors += int(update != 0.0)
             
-            self.errors_per_epoch.append(errors)
+            self.errors_history.append(errors)
             
+            # Para se não houver mais erros
             if errors == 0:
-                self.converged_epoch = epoch + 1
                 break
         
         return self
@@ -66,8 +65,7 @@ y = df['DEATH_EVENT'].values
 
 # Divide em treino e teste
 X_train, X_test, y_train, y_test = train_test_split(
-    X, y, test_size=0.2, random_state=42, stratify=y  # type: ignore
-)
+    X, y, test_size=0.2, random_state=42, stratify=y)
 
 # Normaliza os dados
 scaler = StandardScaler()
@@ -75,41 +73,20 @@ X_train_scaled = scaler.fit_transform(X_train)
 X_test_scaled = scaler.transform(X_test)
 
 # Treina o Perceptron
-perceptron = Perceptron(learning_rate=0.001, n_iterations=5000, random_state=42)
+perceptron = Perceptron(learning_rate=0.01, n_iterations=1000, random_state=42)
 perceptron.fit(X_train_scaled, y_train)
 
-# Avaliação
+# Calcula acurácia
 y_test_pred = perceptron.predict(X_test_scaled)
-
-# Acurácia
 accuracy = np.mean(y_test_pred == y_test)
-print(f"Acurácia no conjunto de teste: {accuracy:.4f}")
+print(f"Acurácia no conjunto de teste: {accuracy:.4f} ({accuracy*100:.2f}%)")
 
-# F1-Score
-f1 = f1_score(y_test, y_test_pred)
-print(f"F1-Score: {f1:.4f}")
-
-# Matriz de confusão
-cm = confusion_matrix(y_test, y_test_pred)
-print("\nMatriz de Confusão:")
-print(cm)
-
-# Pesos e Bias aprendidos
-print("\nPesos finais do modelo:")
-print(perceptron.weights)
-
-print(f"\nBias final: {perceptron.bias:.4f}")
-
-# Convergência
-if perceptron.converged_epoch is not None:
-    print(f"\nO perceptron convergiu em {perceptron.converged_epoch} épocas.")
-else:
-    print("\nO perceptron NÃO convergiu nas iterações máximas.")
-
-# Gráfico de erro por época
-plt.plot(perceptron.errors_per_epoch)
-plt.xlabel('Época')
-plt.ylabel('Erros')
-plt.title('Convergência do Perceptron')
-plt.grid(True)
+# Visualização da convergência
+plt.figure(figsize=(10, 6))
+plt.plot(perceptron.errors_history, linewidth=2)
+plt.xlabel('Época', fontsize=12)
+plt.ylabel('Número de Erros', fontsize=12)
+plt.title('Convergência do Perceptron', fontsize=14, fontweight='bold')
+plt.grid(True, alpha=0.3)
+plt.tight_layout()
 plt.show()
