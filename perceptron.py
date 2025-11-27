@@ -64,8 +64,10 @@ X = df.drop('DEATH_EVENT', axis=1).values
 y = df['DEATH_EVENT'].values
 
 # Divide em treino e teste
-X_train, X_test, y_train, y_test = train_test_split(
-    X, y, test_size=0.2, random_state=42, stratify=y)
+X = np.array(X)
+y = np.array(y)
+X_train, X_test, y_train, y_test = train_test_split(X,y,test_size=0.2,
+    random_state=42,stratify=y)
 
 # Normaliza os dados
 scaler = StandardScaler()
