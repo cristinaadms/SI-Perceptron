@@ -91,83 +91,109 @@ def plot_perceptron_schematic(perceptron, feature_names):
     bias = perceptron.bias
     n_features = len(weights)
     
-    fig, ax = plt.subplots(figsize=(12, 8))
+    # Ajuste de tamanho da figura para manter proporção
+    fig, ax = plt.subplots(figsize=(14, 8))
     ax.axis('off')
-    ax.set_xlim(0, 1.1)
+    ax.set_aspect('equal') # Garante que círculos sejam círculos
+    ax.set_xlim(-0.1, 1.3)
     ax.set_ylim(0, 1)
     
+    # Paleta de Cores Pastéis (hex)
+    colors = {
+        'input': '#AEC6CF',    # Pastel Blue
+        'bias':  '#77DD77',    # Pastel Green
+        'sum':   '#FFB347',    # Pastel Orange
+        'act':   '#FDFD96',    # Pastel Yellow
+        'border': '#555555',   # Dark Gray for borders
+        'text':  '#333333'     # Dark Gray for text
+    }
+    
     # Coordenadas
-    input_x = 0.1
+    input_x = 0.0
     sum_x = 0.5
-    act_x = 0.8
-    out_x = 1.0
+    act_x = 0.9
+    out_x = 1.2
     
     # Espaçamento vertical para os inputs
     y_range = 0.8
     y_start = 0.5 + y_range/2
     y_step = y_range / (n_features - 1) if n_features > 1 else 0
     
+    # Função auxiliar para criar círculos estilizados
+    def add_node(x, y, color, radius=0.05, label=None, label_y_offset=0):
+        circle = mpatches.Circle((x, y), radius, facecolor=color, 
+                               edgecolor=colors['border'], linewidth=2, zorder=10)
+        ax.add_patch(circle)
+        if label:
+            ax.text(x, y + label_y_offset, label, ha='center', va='center', 
+                   fontsize=10, color=colors['text'], fontweight='bold')
+        return circle
+
     # Desenhar Inputs e Pesos
     for i in range(n_features):
         y = y_start - i * y_step
         
         # Nó de Input
-        circle = mpatches.Circle((input_x, y), 0.03, color='#aaccff', ec='k', zorder=10)
-        ax.add_patch(circle)
+        add_node(input_x, y, colors['input'], radius=0.035)
         
-        # Nome da feature
-        ax.text(input_x - 0.04, y, feature_names[i], ha='right', va='center', fontsize=9)
+        # Nome da feature (à esquerda)
+        ax.text(input_x - 0.06, y, feature_names[i], ha='right', va='center', 
+               fontsize=11, color=colors['text'], fontfamily='sans-serif')
         
         # Linha do peso (Input -> Soma)
-        ax.plot([input_x, sum_x], [y, 0.5], 'k-', alpha=0.3, zorder=1)
+        ax.plot([input_x, sum_x], [y, 0.5], color=colors['border'], alpha=0.4, zorder=1)
         
         # Valor do peso
         w = weights[i]
         mx, my = (input_x + sum_x)/2, (y + 0.5)/2
         if n_features <= 15: 
-            ax.text(mx, my, f"{w:.2f}", fontsize=7, ha='center', va='center', 
-                    bbox=dict(facecolor='white', alpha=0.6, edgecolor='none', pad=0.5))
+            ax.text(mx, my, f"{w:.2f}", fontsize=8, ha='center', va='center', 
+                    color=colors['text'],
+                    bbox=dict(facecolor='#f9f9f9', alpha=0.8, edgecolor='none', pad=1))
 
-    # Nó de Bias
-    bias_y = 0.1
-    circle_b = mpatches.Circle((sum_x, bias_y), 0.04, color='#ccffcc', ec='k', zorder=10)
-    ax.add_patch(circle_b)
-    ax.text(sum_x, bias_y, "Bias\n(b)", ha='center', va='center', fontsize=9)
+    # Nó de Bias (ACIMA da soma)
+    bias_y = 0.85
+    add_node(sum_x, bias_y, colors['bias'], radius=0.045)
+    ax.text(sum_x, bias_y, "b", ha='center', va='center', fontsize=14, 
+           fontstyle='italic', color=colors['text'])
+    ax.text(sum_x, bias_y + 0.07, f"{bias:.2f}", ha='center', va='center', fontsize=10, color=colors['text'])
     
     # Linha do Bias
-    ax.plot([sum_x, sum_x], [bias_y + 0.04, 0.5 - 0.06], 'k-', zorder=1)
-    ax.text(sum_x + 0.01, (bias_y + 0.5)/2, f"{bias:.2f}", fontsize=9, fontweight='bold')
+    ax.plot([sum_x, sum_x], [bias_y - 0.045, 0.5 + 0.06], color=colors['border'], linestyle='--', zorder=1)
 
     # Nó de Soma
-    circle_sum = mpatches.Circle((sum_x, 0.5), 0.06, color='#ffcc99', ec='k', zorder=10)
-    ax.add_patch(circle_sum)
+    add_node(sum_x, 0.5, colors['sum'], radius=0.06)
     # Símbolo de Somatório
-    ax.text(sum_x, 0.5, r"$\Sigma$", fontsize=30, ha='center', va='center', zorder=11)
-    ax.text(sum_x, 0.6, "Soma\nPonderada", ha='center', va='bottom', fontsize=9, color='#555')
+    ax.text(sum_x, 0.5, r"$\Sigma$", fontsize=28, ha='center', va='center', 
+           color=colors['text'], zorder=11)
+    ax.text(sum_x, 0.38, "Soma\nPonderada", ha='center', va='top', fontsize=10, color=colors['text'])
 
     # Seta Soma -> Ativação
-    ax.arrow(sum_x + 0.06, 0.5, (act_x - sum_x - 0.12), 0, head_width=0.0, head_length=0.0, fc='k', ec='k', zorder=1)
+    ax.annotate("", xy=(act_x - 0.06, 0.5), xytext=(sum_x + 0.06, 0.5),
+                arrowprops=dict(arrowstyle="->", color=colors['border'], lw=2))
 
     # Nó de Ativação (Sigmoide)
-    circle_act = mpatches.Circle((act_x, 0.5), 0.06, color='#ffffcc', ec='k', zorder=10)
-    ax.add_patch(circle_act)
+    add_node(act_x, 0.5, colors['act'], radius=0.06)
     
-    # Desenho da Sigmoide (curva S)
-    # Cria pontos para o S
+    # Desenho da Sigmoide estilizada
     t = np.linspace(-4, 4, 100)
     sig = 1 / (1 + np.exp(-t))
-    # Escala para caber no círculo
-    sx = act_x + (t / 4) * 0.04  # largura
-    sy = 0.5 + (sig - 0.5) * 0.08 # altura
-    ax.plot(sx, sy, 'k-', lw=2, zorder=11)
+    sx = act_x + (t / 4) * 0.04
+    sy = 0.5 + (sig - 0.5) * 0.08
+    ax.plot(sx, sy, color=colors['text'], lw=2.5, zorder=11)
     
-    ax.text(act_x, 0.6, "Sigmoide", ha='center', va='bottom', fontsize=9, color='#555')
+    # Texto "Sigmoide" ACIMA do nó
+    ax.text(act_x, 0.62, "Sigmoide", ha='center', va='bottom', 
+           fontsize=10, color=colors['text'], fontweight='bold')
 
     # Seta de Saída
-    ax.arrow(act_x + 0.06, 0.5, 0.1, 0, head_width=0.02, head_length=0.02, fc='k', ec='k', zorder=1)
-    ax.text(out_x, 0.5, "Output", ha='center', va='center', fontsize=10, fontweight='bold')
+    ax.annotate("", xy=(out_x, 0.5), xytext=(act_x + 0.06, 0.5),
+                arrowprops=dict(arrowstyle="->", color=colors['border'], lw=2))
+    
+    ax.text(out_x + 0.02, 0.5, "Output", ha='left', va='center', 
+           fontsize=12, fontweight='bold', color=colors['text'])
 
-    plt.title('Estrutura do Perceptron (Visualização)', fontsize=14, fontweight='bold')
+    plt.title('Estrutura do Perceptron (Visualização)', fontsize=16, fontweight='bold', color=colors['text'], pad=20)
     plt.tight_layout()
     plt.show()
 
